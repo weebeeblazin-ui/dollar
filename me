@@ -1,0 +1,262 @@
+/collapse-to-invariant for Engineering Workflows and Code Reviews
+Purpose
+Use /collapse-to-invariant when a discussion has accumulated assumptions, urgency, blame, or speculative explanations faster than the team has accumulated evidence. In engineering, the method is not a replacement for debugging, incident management, architecture review, or security review. It is a short reasoning hygiene step that returns the conversation to observable behavior, explicit trade-offs, and reversible next actions.
+
+Engineering boundary: We use this process to separate observations from hypotheses. It does not certify a root cause, assign intent, or justify an irreversible change without evidence.
+
+The target invariant is the same as in the broader method, translated for engineering work:
+
+Grounded engineering agency: the team can state what the system demonstrably does, what remains uncertain, which quality attribute matters, and the next smallest safe experiment.
+
+Use it when…
+Do not use it as…
+A thread turns into “this always breaks,” “the platform hates us,” or “we must ship now.”
+A substitute for logs, traces, tests, threat modeling, or a post-incident review.
+A review comment asserts a future failure without a reproduction or mechanism.
+A way to dismiss a valid concern because its evidence is incomplete.
+A production incident creates pressure for a broad or irreversible patch.
+Permission to delay an urgent safety, security, or compliance response.
+A disagreement is attached to ownership, status, or a preferred technology.
+A voting mechanism for architecture decisions.
+
+The daily workflow: a 90-second reset
+Use this reset in stand-ups, debugging sessions, issue triage, design discussions, and pull-request threads. One person can facilitate; no special role is required.
+
+Step
+Prompt
+Acceptable output
+1. Observation
+“What did we directly observe?”
+Error message, failing test, trace, metric, code path, customer report, or reproducible behavior.
+2. Interpretation
+“What are we inferring from that?”
+A labeled hypothesis—not a conclusion.
+3. Invariant
+“What remains true if the hypothesis is wrong?”
+User impact, known constraint, quality goal, or decision we still need to make.
+4. Evidence gap
+“What would discriminate among the leading explanations?”
+A test, query, trace, benchmark, source inspection, or review from an owner.
+5. Reversible next step
+“What is the smallest safe move?”
+Add instrumentation, write a reproducer, gate the change, feature-flag it, revert, or wait for a defined check.
+
+A concise team script
+Observation: [direct evidence]
+Hypothesis: [possible explanation; confidence if useful]
+What remains: [known impact, constraint, or value]
+Invariant: grounded engineering agency
+Next safe action: [small, reversible test or action]
+Owner and check-in: [person / time or event]
+
+The extra owner and check-in line turns reflection into execution. It prevents a useful pause from becoming an indefinite delay.
+
+Add it to existing ceremonies—not as a new meeting
+The skill is most effective as a lightweight pattern embedded in tools and rituals your team already uses.
+
+Workflow moment
+Trigger
+How to apply it
+Desired output
+Daily stand-up
+A blocker is described through a broad claim.
+Ask for observation, hypothesis, and next safe action in under two minutes.
+A testable next move with a named owner.
+Issue triage
+Severity or root cause is disputed.
+Keep customer impact separate from causal speculation.
+Clear severity, uncertainty label, and investigation task.
+Pair debugging
+Two or more hypotheses compete.
+Create a small evidence table.
+The test most likely to rule in/out a hypothesis.
+Design review
+The discussion becomes tool-, status-, or identity-driven.
+Restate the decision, constraints, and reversibility.
+Decision record with trade-offs and a rollback plan.
+Incident response
+Pressure produces a broad patch.
+Preserve urgent impact while collapsing unsupported certainty.
+Containment action plus a scoped diagnostic path.
+Retrospective
+A narrative singles out a person or team.
+Separate sequence of events from causal story and judgment.
+System improvement tied to an observable failure mode.
+
+A code-review protocol
+The method fits code review especially well because comments frequently mix factual observations, predicted risks, preferences, and urgency. The goal is not to make every comment formal; it is to apply the protocol when a comment could block a merge, materially change scope, or create interpersonal friction.
+
+Step 1: Label the review comment
+Use one of four labels at the beginning of substantive comments:
+
+Label
+Meaning
+Merge implication
+fact:
+Directly evidenced by code, test, benchmark, docs, or a reproducible behavior.
+May be blocking if impact is material.
+risk:
+A specific predicted failure with a plausible mechanism.
+Usually asks for a test, mitigation, or decision note.
+question:
+Missing context or an unresolved trade-off.
+Not blocking by itself.
+preference:
+A maintainability or style choice without a demonstrated correctness issue.
+Non-blocking unless the team’s standards say otherwise.
+
+Example of a stronger review comment
+
+risk: This cache key omits the tenant ID, so two tenants requesting the same document ID can receive the same cached result.
+
+
+Evidence: `makeKey(documentId)` is used by both request paths; the cache is shared.
+
+
+Request: Please add tenantId to the key and a cross-tenant regression test. If the cache is actually tenant-scoped upstream, link that guarantee here.
+
+This comment contains an observable code fact, a bounded causal mechanism, and a testable remediation. It does not rely on “this feels unsafe” or “we cannot risk it” as its entire rationale.
+
+Step 2: Collapse the review claim before escalating it
+When a comment is broad, rewrite it with the following sequence.
+
+Original review language
+Collapse to invariant
+Better review action
+“This refactor will definitely cause outages.”
+Observation: behavior changed in the retry path. Hypothesis: retry storms may increase. What remains: reliability matters, but the failure is not proven.
+Ask for a load test, backoff analysis, metric, or feature-flag plan.
+“We have to merge this today or the launch is dead.”
+Observation: launch date is near. Hypothesis: this exact PR is critical path. What remains: launch readiness is important.
+Confirm dependency, define a minimal scope, and preserve rollback.
+“This is not how we do things here.”
+Observation: the change differs from an established pattern. Hypothesis: the pattern exists for a relevant reason. What remains: consistency and maintainability matter.
+Link the convention or explain the concrete maintenance cost.
+“Alex’s design is overengineered again.”
+Observation: the proposal introduces components A, B, and C. Hypothesis: complexity exceeds the current need. What remains: operational simplicity matters.
+Compare alternatives against explicit requirements and lifecycle cost.
+
+Step 3: Decide blocking status from evidence and reversibility
+Use a review comment as blocking only when it identifies one of the following:
+
+Blocking basis
+Minimum supporting material
+Correctness regression
+Failing test, reproducer, clear code-path proof, or specified contract violation.
+Security/privacy exposure
+Concrete threat path, policy requirement, or security-owner assessment.
+Data integrity or irreversible migration risk
+Defined failure mode, recovery limitation, and required safeguard.
+Material reliability/performance risk
+Benchmark, capacity model, known limit, production precedent, or a plausible bounded mechanism.
+Explicit architecture or compliance constraint
+Linked decision record, standard, policy, or owner confirmation.
+
+If the evidence is incomplete, the comment can still be valuable. Change the action: request a test, record the risk, add monitoring, or approve behind a feature flag. This preserves the concern without using uncertainty as a veto.
+
+Copy-paste templates
+Pull-request description
+## Evidence and invariant
+
+
+**Observed behavior / need:**
+[Directly observable user, system, or maintenance need.]
+
+
+**Hypothesis being addressed:**
+[What we believe is causing the issue or why this design helps.]
+
+
+**What remains true if that hypothesis is incomplete:**
+[Durable goal or constraint: correctness, latency, privacy, maintainability, etc.]
+
+
+**Smallest safe change:**
+[Scope of this PR.]
+
+
+**Validation / rollback:**
+[Tests, metrics, flag, migration reversal, or other recovery path.]
+
+Review comment
+[risk | fact | question | preference]: [One-sentence claim.]
+
+
+**Evidence:** [Code path, test, benchmark, contract, or reference.]
+**Impact if true:** [Bounded user/system impact.]
+**Suggested next action:** [Test, change, clarification, monitoring, or decision record.]
+**Blocking?** [Yes / No — why.]
+
+Incident channel update
+**Observed:** [Metric, error, scope, and time window.]
+**Working hypotheses:** [List with confidence; do not present as root cause.]
+**Invariant:** [Known customer impact and safety/reliability objective.]
+**Containment now:** [Reversible or established emergency action.]
+**Next evidence check:** [Query, trace, owner, and timing.]
+
+Worked engineering example
+Unstructured discussion: “The new queue library is cursed. It keeps breaking production, so we should roll it back immediately and never use it again.”
+
+Collapse stage
+Team translation
+Narrative
+Remove “cursed” and the permanent technology verdict.
+Evidence
+Establish which queues, job types, deployments, and error signatures changed.
+Urgency
+Preserve immediate customer-impact containment; do not infer that every instance needs a permanent rollback.
+Identity
+Remove “the library choice proves the team made a bad decision.”
+Symbolic
+Replace “never use it again” with a decision based on measured failure modes and alternatives.
+
+Observation: Job completion dropped from [baseline] after deployment [version]; workers show [error signature].
+Hypothesis: The new library's acknowledgement behavior contributes to retries.
+What remains: Customers are waiting on jobs; reliable processing is the priority.
+Invariant: Grounded engineering agency.
+Next safe action: Roll back or disable the affected path using the established control, preserve logs, and compare acknowledgement traces before declaring root cause.
+Owner and check-in: [incident lead] / after [next trace sample].
+
+The method does not prevent a rollback. It makes the rollback proportionate, auditable, and compatible with a later root-cause analysis.
+
+Facilitation practices that keep it healthy
+The team should use the method as a shared standard of clarity, not as a rhetorical weapon. A reviewer should never say “collapse your claim” to dismiss a colleague. Instead, use collaborative language such as: “Can we separate the observed behavior from the predicted risk?” or “What test would help us decide?”
+
+Good practice
+Avoid
+Apply the same evidence standard to senior and junior contributors.
+Using the method to override people with less status.
+Preserve stated concerns and values in the written record.
+Treating uncertainty as proof that the concern is irrational.
+Time-box exploration and assign the next check.
+Repeating the framework until a decision is avoided.
+Escalate genuine security, safety, or policy concerns to the right owner.
+Using “reversible” as a reason to ignore required controls.
+Record decisions and assumptions in PRs or ADRs.
+Reopening settled decisions without new evidence.
+
+A two-week adoption plan
+Begin with a small experiment rather than a policy mandate. During the first week, team leads model the template in one PR, one triage session, and one design discussion. The goal is simply to make the distinction between evidence and hypothesis visible.
+
+During the second week, add the four review labels (fact, risk, question, preference) to the PR template and ask reviewers to use the full evidence block only for blocking comments or disagreements. At the end of the week, spend ten minutes in the retrospective asking whether the protocol made decisions clearer, faster, or fairer—and remove any step that became ceremonial rather than useful.
+
+Signal to inspect
+Healthy direction
+Do not optimize for
+Fewer circular review threads
+Discussions converge on evidence, ownership, and a decision.
+Fewer comments overall.
+Clearer blocking rationale
+Blockers link to a test, mechanism, standard, or known constraint.
+Zero disagreement.
+Faster time to next experiment
+Teams can name a bounded test or mitigation.
+Fast merges at the expense of risk.
+Better incident updates
+Observations, hypotheses, containment, and check-ins are distinct.
+Premature root-cause certainty.
+
+One rule to remember
+Be kind to the person, precise about the evidence, and conservative about irreversible action.
+
+That rule is enough to guide most applications: retain the concern, reduce unsupported certainty, and choose the smallest action that helps the team learn safely.
